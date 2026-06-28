@@ -14,10 +14,10 @@ dotenv.config();
 const app = express();
 
 // ==========================================
-// Middlewares — these will run before every request
+// Middlewares — ye har request se pehle chalenge
 // ==========================================
 
-// CORS — only allow requests from permitted frontend origins
+// CORS — sirf permitted origins se requests allow kar
 const allowedOrigins = [
   "http://localhost:5173",
   "http://localhost:3000",
@@ -28,11 +28,11 @@ const allowedOrigins = [
 app.use(
   cors({
     origin(origin, callback) {
-      // Origin is undefined for tools like Postman/curl
+      // Origin undefined hota hai Postman/curl ke liye
       if (!origin || allowedOrigins.includes(origin)) {
         callback(null, true);
       } else {
-        callback(new Error(`CORS blocked for origin: ${origin}`));
+        callback(new Error(`❌ CORS blocked for origin: ${origin}`));
       }
     },
     credentials: true,
@@ -40,26 +40,31 @@ app.use(
   })
 );
 
-// Parse JSON body (data for POST/PUT requests)
+// JSON body parse kar (POST/PUT requests ke liye)
 app.use(express.json());
 
-// Parse URL encoded data (form submissions)
+// URL-encoded data parse kar (form submissions ke liye)
 app.use(express.urlencoded({ extended: true }));
 
-// Parse Cookies (JWT token will be in a cookie)
+// Cookies parse kar (JWT token cookie mein hoga)
 app.use(cookieParser());
 
-// Morgan — log every API request to the console (helpful in development)
+// Morgan — har request log kar (development mein helpful)
 app.use(morgan("dev"));
 
 // ==========================================
-// Cloudinary Configuration — For Image upload
+// Cloudinary Configuration — Image upload ke liye
 // ==========================================
 cloudinary.config({
-  cloud_name: process.env.Cluadinary_cloud_name,
-  api_key: process.env.Cluadinary_api_key,
-  api_secret: process.env.Cluadinary_api_secret,
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
 });
+
+// ✅ Cloudinary validation
+if (!process.env.CLOUDINARY_CLOUD_NAME) {
+  console.warn("⚠️ Cloudinary environment variables missing!");
+}
 
 // ==========================================
 // Routes — API endpoints
@@ -73,7 +78,7 @@ app.use("/api", productRoutes); // /api/product/all, /api/product/:id, etc.
 app.use("/api", orderRoutes); // /api/order/new, /api/order/myorders, etc.
 
 // ==========================================
-// Health Check — Check if the server is running
+// Health Check — Server check karne ke liye
 // ==========================================
 app.get("/", (req, res) => {
   res.json({
@@ -83,7 +88,7 @@ app.get("/", (req, res) => {
 });
 
 // ==========================================
-// Global Error Handler — Any unhandled error will come here
+// Global Error Handler — koi bhi unhandled error yahan aayega
 // ==========================================
 app.use((err, req, res, next) => {
   console.error("❌ Error:", err.message);
@@ -92,7 +97,7 @@ app.use((err, req, res, next) => {
   if (err.code === "LIMIT_FILE_SIZE") {
     return res.status(400).json({
       success: false,
-      message: "File is too large — max 5MB allowed",
+      message: "❌ File is too large — max 5MB allowed",
     });
   }
 
@@ -100,7 +105,15 @@ app.use((err, req, res, next) => {
   if (err.code === "LIMIT_UNEXPECTED_FILE") {
     return res.status(400).json({
       success: false,
-      message: "Too many files — max 5 allowed",
+      message: "❌ Too many files — max 5 allowed",
+    });
+  }
+
+  // CORS errors
+  if (err.message.includes("CORS")) {
+    return res.status(403).json({
+      success: false,
+      message: err.message,
     });
   }
 
@@ -111,23 +124,36 @@ app.use((err, req, res, next) => {
 });
 
 // ==========================================
-// Server Start — Connect to MongoDB FIRST, then start the server
+// Server Start — PEHLE MongoDB connect, PHIR server start
 // ==========================================
 const port = process.env.PORT || 5000;
 
-// First connect to DB, then start server
+// Server ko start karne ke liye function
 const startServer = async () => {
-  await connectDb();
+  try {
+    // MongoDB se connect kar
+    await connectDb();
+    console.log("✅ Database connection successful!");
 
-  // Only call app.listen() in local development (not on Vercel)
-  if (process.env.NODE_ENV !== "production" && !process.env.VERCEL) {
-    app.listen(port, () => {
-      console.log(`🚀 Server is running: http://localhost:${port}`);
-    });
+    // Local development mein server start kar (port pe)
+    // Vercel pe ye nahi chalega (serverless functions use hote hain)
+    if (process.env.NODE_ENV !== "production") {
+      app.listen(port, () => {
+        console.log(`🚀 Server is running on: http://localhost:${port}`);
+      });
+    } else {
+      console.log("🚀 Server ready for Vercel (serverless mode)");
+    }
+  } catch (error) {
+    console.error("❌ Failed to start server:", error.message);
+    process.exit(1); // Server ko crash kar do
   }
 };
 
+// Server start kar
 startServer();
 
-// Exporting the app is required for Vercel Serverless
+// ==========================================
+// Vercel ke liye export (serverless functions ke liye zaroori)
+// ==========================================
 export default app;
