@@ -14,10 +14,11 @@ dotenv.config();
 const app = express();
 
 // ==========================================
-// Middlewares — ye har request se pehle chalenge
+// ==========================================
+// Middlewares — these run before every request
 // ==========================================
 
-// CORS — sirf permitted origins se requests allow kar
+// CORS — only allow requests from permitted origins
 const allowedOrigins = [
   "http://localhost:5173",
   "http://localhost:3000",
@@ -28,7 +29,7 @@ const allowedOrigins = [
 app.use(
   cors({
     origin(origin, callback) {
-      // Origin undefined hota hai Postman/curl ke liye
+      // Origin is undefined for tools like Postman/curl
       if (!origin || allowedOrigins.includes(origin)) {
         callback(null, true);
       } else {
@@ -40,20 +41,20 @@ app.use(
   })
 );
 
-// JSON body parse kar (POST/PUT requests ke liye)
+// Parse JSON body (for POST/PUT requests)
 app.use(express.json());
 
-// URL-encoded data parse kar (form submissions ke liye)
+// Parse URL-encoded data (for form submissions)
 app.use(express.urlencoded({ extended: true }));
 
-// Cookies parse kar (JWT token cookie mein hoga)
+// Parse Cookies (JWT token will be stored in a cookie)
 app.use(cookieParser());
 
-// Morgan — har request log kar (development mein helpful)
+// Morgan — log every API request (helpful for development)
 app.use(morgan("dev"));
 
 // ==========================================
-// Cloudinary Configuration — Image upload ke liye
+// Cloudinary Configuration — For Image uploads
 // ==========================================
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
@@ -78,7 +79,7 @@ app.use("/api", productRoutes); // /api/product/all, /api/product/:id, etc.
 app.use("/api", orderRoutes); // /api/order/new, /api/order/myorders, etc.
 
 // ==========================================
-// Health Check — Server check karne ke liye
+// Health Check — Check if the server is running
 // ==========================================
 app.get("/", (req, res) => {
   res.json({
@@ -88,7 +89,7 @@ app.get("/", (req, res) => {
 });
 
 // ==========================================
-// Global Error Handler — koi bhi unhandled error yahan aayega
+// Global Error Handler — catches all unhandled errors
 // ==========================================
 app.use((err, req, res, next) => {
   console.error("❌ Error:", err.message);
@@ -124,19 +125,19 @@ app.use((err, req, res, next) => {
 });
 
 // ==========================================
-// Server Start — PEHLE MongoDB connect, PHIR server start
+// Server Start — Connect to MongoDB FIRST, then start server
 // ==========================================
 const port = process.env.PORT || 5000;
 
-// Server ko start karne ke liye function
+// Function to start the server
 const startServer = async () => {
   try {
-    // MongoDB se connect kar
+    // Connect to MongoDB
     await connectDb();
     console.log("✅ Database connection successful!");
 
-    // Local development mein server start kar (port pe)
-    // Vercel pe ye nahi chalega (serverless functions use hote hain)
+    // Start server in local development (listen on port)
+    // This part is skipped on Vercel (serverless functions are used instead)
     if (process.env.NODE_ENV !== "production") {
       app.listen(port, () => {
         console.log(`🚀 Server is running on: http://localhost:${port}`);
@@ -146,14 +147,14 @@ const startServer = async () => {
     }
   } catch (error) {
     console.error("❌ Failed to start server:", error.message);
-    process.exit(1); // Server ko crash kar do
+    process.exit(1); // Crash the server if DB connection fails
   }
 };
 
-// Server start kar
+// Start the server
 startServer();
 
 // ==========================================
-// Vercel ke liye export (serverless functions ke liye zaroori)
+// Export app for Vercel (required for serverless functions)
 // ==========================================
 export default app;

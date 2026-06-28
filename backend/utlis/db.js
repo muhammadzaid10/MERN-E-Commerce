@@ -1,36 +1,35 @@
 import mongoose from "mongoose";
 
 // ===================================================
-// Global cache (Vercel serverless functions ke liye)
+// Global cache (Required for Vercel serverless functions)
 // ===================================================
 let cached = global.mongoose || (global.mongoose = { conn: null, promise: null });
 
 const connectDb = async () => {
-  // Agar pehle se connect hai to return kar do
+  // Return existing connection if already established
   if (cached.conn) {
     console.log(" Using cached MongoDB connection");
     return cached.conn;
   }
 
   // ===================================================
-  // Environment variable se MongoDB URI lao
+  // Load MongoDB URI from environment variables
   // ===================================================
-  // Vercel mein set karne ke liye: MONGODB_URI
-  const mongoUri = process.env.MONGODB_URI;
+  const mongoUri = process.env.MONGO_URI || process.env.MONGODB_URI;
 
-  // Agar URI nahi mila
+  // Throw error if URI is missing
   if (!mongoUri) {
     const error = new Error(
-      "❌ MONGODB_URI environment variable not found"
+      "❌ MONGO_URI environment variable not found"
     );
     console.error(error.message);
     throw error;
   }
 
   try {
-    console.log(" 🔄 connecting to MongoDB");
+    console.log(" 🔄 Connecting to MongoDB...");
 
-    // Mongoose ke sath connect kar
+    // Establish new Mongoose connection
     cached.conn = await mongoose.connect(mongoUri, {
       dbName: "ecommerce",
       retryWrites: true,
@@ -42,10 +41,10 @@ const connectDb = async () => {
   } catch (error) {
     console.error("❌ MongoDB Connection Failed:", error.message);
 
-    // Agar connection fail ho to clear kar
+    // Clear the cache if connection fails
     cached.conn = null;
 
-    // Error throw kar so server start nahi hoga
+    // Throw error to prevent server from starting without DB
     throw error;
   }
 };

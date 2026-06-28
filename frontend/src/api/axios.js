@@ -11,8 +11,8 @@ const baseURL =
   (import.meta.env.DEV ? "http://localhost:5000/api" : "");
 
 if (!baseURL) {
-  throw new Error(
-    "VITE_BACKEND_URL is missing. Set it in Vercel → Project Settings → Environment Variables."
+  console.warn(
+    "VITE_BACKEND_URL is missing! API calls will fail. Please set it in Vercel."
   );
 }
 
