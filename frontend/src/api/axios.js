@@ -8,7 +8,9 @@ import axios from "axios";
 
 const baseURL =
   import.meta.env.VITE_BACKEND_URL ||
-  (import.meta.env.DEV ? "http://localhost:5000/api" : "");
+  (import.meta.env.DEV 
+    ? "http://localhost:5000/api" 
+    : "https://backend-beta-jade-66.vercel.app/api");
 
 if (!baseURL) {
   console.warn(
